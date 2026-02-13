@@ -149,6 +149,8 @@ export default function ExamRoom() {
                 Back to Dashboard
             </button>
         </div>
+    );
+
     if (status === 'waiting') {
         return (
             <div className="flex-center" style={{ height: '100vh', flexDirection: 'column', gap: 24, textAlign: 'center' }}>
