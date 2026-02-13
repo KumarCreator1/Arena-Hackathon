@@ -1,0 +1,180 @@
+{
+  "config": {
+    "title": "Chemical Kinetics DPP 01",
+    "durationMinutes": 36,
+    "marking": {
+      "correct": 4,
+      "incorrect": -1
+    }
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "text": "For the reaction, $N_{2}+3H_{2}\\rightarrow2~NH_{3}$, rate is expressed as",
+      "options": [
+        "$\\frac{d[N_{2}]}{3dt}=-\\frac{d[H_{2}]}{2dt}=3\\frac{d[NH_{3}]}{dt}$",
+        "$-\\frac{d[N_{2}]}{dt}=-\\frac{1}{3}\\frac{d[H_{2}]}{dt}=\\frac{1}{2}\\frac{d[NH_{3}]}{dt}$",
+        "$-\\frac{d[N_{2}]}{dt}=-\\frac{3~d[H_{2}]}{dt}=\\frac{2~d[NH_{3}]}{dt}$",
+        "$-\\frac{d[H_{2}]}{dt}=\\frac{d[NH_{3}]}{dt}$"
+      ],
+      "answerIndex": 1,
+      "explanation": "The rate of reaction is related to stoichiometric coefficients by dividing the rate of change of concentration by the respective coefficient. For $N_{2}+3H_{2}\\rightarrow2~NH_{3}$, Rate $= -\\frac{d[N_2]}{dt} = -\\frac{1}{3}\\frac{d[H_2]}{dt} = +\\frac{1}{2}\\frac{d[NH_3]}{dt}$."
+    },
+    {
+      "id": "q2",
+      "text": "For the reaction, $A+B\\rightarrow2C+D$ which one is the incorrect statement?",
+      "options": [
+        "Rate of disappearance of $A =$ Rate of disappearance of $B$",
+        "Rate of disappearance of $A =$ Rate of appearance of $D$",
+        "Rate of disappearance of $B = 2 \\times$ rate of appearance of $C$",
+        "Rate of disappearance of $B = \\frac{1}{2} \\times$ rate of appearance of $C$"
+      ],
+      "answerIndex": 2,
+      "explanation": "From stoichiometry, $-\\frac{d[B]}{dt} = \\frac{1}{2}\\frac{d[C]}{dt}$. This means the rate of disappearance of B is half the rate of appearance of C. Option C states it is twice, which is incorrect."
+    },
+    {
+      "id": "q3",
+      "text": "The rate of the gaseous reaction: $A(g)+B(g) \\rightarrow$ Product is given by expression $-\\frac{dx}{dt}=k[A][B]$. If the volume of the reaction vessel is suddenly reduced to one fourth of the initial volume, the ratio of final rate to initial rate is",
+      "options": [
+        "4:1",
+        "2:1",
+        "16:1",
+        "1:2"
+      ],
+      "answerIndex": 2,
+      "explanation": "Reducing volume to $1/4$ increases concentration by a factor of 4. Rate' $= k(4[A])(4[B]) = 16k[A][B]$. The ratio is $16:1$."
+    },
+    {
+      "id": "q4",
+      "text": "For the reaction: $H_{2}(g)+I_{2}(g)\\rightarrow2HI(g),$ the rate of disappearance of $H_{2}$ is $1.0\\times10^{-4}$ mol $L^{-1}s^{-1}$. The rate of appearance of HI will be",
+      "options": [
+        "$1.0\\times10^{-4}$ mol $L^{-1}s^{-1}$",
+        "$0.50\\times10^{-4}$ mol $L^{-1}s^{-1}$",
+        "$2.0\\times10^{-4}$ mol $L^{-1}s^{-1}$",
+        "$4.0\\times10^{-4}$ mol $L^{-1}s^{-1}$"
+      ],
+      "answerIndex": 2,
+      "explanation": "Rate of appearance of $HI$ is twice the rate of disappearance of $H_2$. Rate $= 2 \\times 1.0\\times10^{-4} = 2.0\\times10^{-4}$ mol $L^{-1}s^{-1}$."
+    },
+    {
+      "id": "q5",
+      "text": "The reaction, $A(g)+2~B(g)\\rightarrow C(g)+D(g)$ is an elementary process. In an experiment, the initial partial pressure of A and B are $p_{A}=0.60$ and $p_{B}=0.80$ atm. When $p_{C}=0.2$ atm, the rate of reaction relative to the initial rate is",
+      "options": [
+        "$1/48$",
+        "$1/24$",
+        "$9/16$",
+        "$1/6$"
+      ],
+      "answerIndex": 3,
+      "explanation": "When $p_C=0.2$, $p_A$ drops by 0.2 to 0.4, and $p_B$ drops by $2(0.2)=0.4$ to 0.4. Ratio = $\\frac{k(0.4)(0.4)^2}{k(0.6)(0.8)^2} = \\frac{0.064}{0.384} = \\frac{1}{6}$."
+    },
+    {
+      "id": "q6",
+      "text": "The rate of the reaction, $A+B+C\\rightarrow$ Products, is given by $-\\frac{d[A]}{dt}=k[A]^{1/2}[B]^{1/3}[C]^{1/4}$. The order of the reaction is",
+      "options": [
+        "$1/2$",
+        "$13/12$",
+        "1",
+        "2"
+      ],
+      "answerIndex": 1,
+      "explanation": "Order is the sum of exponents: $\\frac{1}{2} + \\frac{1}{3} + \\frac{1}{4} = \\frac{6+4+3}{12} = \\frac{13}{12}$."
+    },
+    {
+      "id": "q7",
+      "text": "Select the rate law that corresponds to the data shown for the following reaction: $A+B\\rightarrow C$\n\n| Expt. No. | $[A]_0$ | $[B]_0$ | Initial rate |\n|---|---|---|---|\n| 1 | 0.012 | 0.035 | 0.10 |\n| 2 | 0.024 | 0.070 | 0.80 |\n| 3 | 0.024 | 0.035 | 0.10 |\n| 4 | 0.012 | 0.070 | 0.80 |",
+      "options": [
+        "$rate=k[B]^{3}$",
+        "$rate=k[B]^{4}$",
+        "$rate=k[A][B]^{3}$",
+        "$rate=K[A]^{2}[B]^{2}$"
+      ],
+      "answerIndex": 0,
+      "explanation": "Comparing Exp 1 and 3, doubling [A] has no effect on rate (order w.r.t A is 0). Comparing Exp 1 and 4, doubling [B] increases rate by factor of 8 ($2^3$), so order w.r.t B is 3."
+    },
+    {
+      "id": "q8",
+      "text": "For a chemical reaction, $A\\rightarrow E,$ it is found that rate of reaction is doubled when the concentration of A is increased four times. The order of the reaction is",
+      "options": [
+        "1",
+        "2",
+        "$1/2$",
+        "Zero"
+      ],
+      "answerIndex": 2,
+      "explanation": "Rate $\\propto [A]^n$. If $2 = (4)^n$, then $2^1 = (2^2)^n = 2^{2n}$. Thus $2n=1$ and $n=1/2$."
+    },
+    {
+      "id": "q9",
+      "text": "The rate of reaction, $A+B\\rightarrow$ Products, is given by the equation, $r=k[A][B]$. If B is taken in large excess, the order of reaction would be",
+      "options": [
+        "2",
+        "1",
+        "zero",
+        "unpredictable"
+      ],
+      "answerIndex": 1,
+      "explanation": "When B is in large excess, its concentration remains effectively constant. The rate becomes $r = k'[A]$, making it a pseudo-first-order reaction."
+    },
+    {
+      "id": "q10",
+      "text": "The hydrolysis of ethyl acetate is a reaction of $CH_{3}COOC_{2}H_{5}+H_{2}O\\xrightarrow{H^{+}} CH_{3}COOH +C_{2}H_{5}OH$",
+      "options": [
+        "zero order",
+        "fírst order",
+        "second order",
+        "third order"
+      ],
+      "answerIndex": 1,
+      "explanation": "Acid hydrolysis of ester is a pseudo-first-order reaction because water is present in large excess."
+    },
+    {
+      "id": "q11",
+      "text": "The unit of rate constant and rate of a reaction are identical for:",
+      "options": [
+        "zero order reaction.",
+        "first order reaction.",
+        "second order reaction.",
+        "third order reaction."
+      ],
+      "answerIndex": 0,
+      "explanation": "For a zero-order reaction, Rate $= k[A]^0 = k$. Thus, the units of rate and rate constant are the same ($mol~L^{-1}s^{-1}$)."
+    },
+    {
+      "id": "q12",
+      "text": "Units of rate constant of first and zero order reactions in terms of molarity M unit are, respectively.",
+      "options": [
+        "$s^{-1}$, $Ms^{-1}$",
+        "$s^{-1},$ M",
+        "$Ms^{-1}$, $s^{-1}$",
+        "M, $s^{-1}$"
+      ],
+      "answerIndex": 0,
+      "explanation": "First order unit is $time^{-1}$ ($s^{-1}$). Zero order unit is $conc \\cdot time^{-1}$ ($M s^{-1}$)."
+    },
+    {
+      "id": "q13",
+      "text": "Select the rate law that corresponds to the data shown for the following reaction $A+B\\rightarrow C$\n\n| Exp. | [A] | [B] | Initial rate |\n|---|---|---|---|\n| 1. | 0.012 | 0.035 | 0.10 |\n| 2. | 0.024 | 0.070 | 1.6 |\n| 3. | 0.024 | 0.035 | 0.20 |\n| 4. | 0.012 | 0.070 | 0.80 |",
+      "options": [
+        "$Rate=K[B]^{3}$",
+        "$Rate=K[B]^{4}$",
+        "$Rate=K[A][B]^{3}$",
+        "$Rate=K[A]^{2}[B]^{2}$"
+      ],
+      "answerIndex": 2,
+      "explanation": "Comparing 1 and 3: [A] doubles, rate doubles (order 1 w.r.t A). Comparing 1 and 4: [B] doubles, rate increases by 8 (order 3 w.r.t B). Law: $k[A][B]^3$."
+    },
+    {
+      "id": "q14",
+      "text": "For the reaction $N_{2}O_{5}(g)\\longrightarrow2NO_{2}(g)+\\frac{1}{2}O_{2}(g)$ the value of rate of disappearance of $N_{2}O_{5}$ is given as $6.25\\times10^{-3}$ mol $L^{-1}s^{-1}$. The rate of formation of $NO_{2}$ and $O_{2}$ is given respectively as:",
+      "options": [
+        "$1.25\\times10^{-2}$ mol $L^{-1}s^{-1}$ and $6.25\\times10^{-3}$ mol $L^{-1}s^{-1}$",
+        "$6.25\\times10^{-3}$ mol $L^{-1}s^{-1}$ and $6.25\\times10^{-3}$ mol $L^{-1}s^{-1}$",
+        "$1.25\\times10^{-2}$ mol $L^{-1}s^{-1}$ and $3.125\\times10^{-3}$ mol $L^{-1}s^{-1}$",
+        "$6.25\\times10^{-3}$ mol $L^{-1}s^{-1}$ and $3.125\\times10^{-3}$ mol $L^{-1}s^{-1}$"
+      ],
+      "answerIndex": 2,
+      "explanation": "Rate of formation of $NO_2 = 2 \\times (-d[N_2O_5]/dt) = 2 \\times 6.25\\times10^{-3} = 1.25\\times10^{-2}$. Rate of formation of $O_2 = 0.5 \\times 6.25\\times10^{-3} = 3.125\\times10^{-3}$."
+    }
+  ]
+}

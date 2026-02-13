@@ -1,0 +1,72 @@
+{
+    "config": {
+        "title": "Demo — Data Structures Midterm",
+        "durationMinutes": 30,
+        "marking": {
+            "correct": 4,
+            "incorrect": -1
+        }
+    },
+    "questions": [
+        {
+            "id": "q1",
+            "text": "What is the time complexity of binary search?",
+            "options": [
+                "O(n)",
+                "O(log n)",
+                "O(n²)",
+                "O(1)"
+            ],
+            "answerIndex": 1,
+            "explanation": "Binary search halves the search space each step, giving O(log n)."
+        },
+        {
+            "id": "q2",
+            "text": "Which data structure uses LIFO ordering?",
+            "options": [
+                "Queue",
+                "Stack",
+                "Linked List",
+                "Array"
+            ],
+            "answerIndex": 1,
+            "explanation": "Stack follows Last-In-First-Out (LIFO) ordering."
+        },
+        {
+            "id": "q3",
+            "text": "What is the worst-case space complexity of a hash table?",
+            "options": [
+                "O(1)",
+                "O(log n)",
+                "O(n)",
+                "O(n²)"
+            ],
+            "answerIndex": 2,
+            "explanation": "In the worst case, all keys hash to the same slot, requiring O(n) space."
+        },
+        {
+            "id": "q4",
+            "text": "Which traversal visits the root node first?",
+            "options": [
+                "In-order",
+                "Post-order",
+                "Pre-order",
+                "Level-order"
+            ],
+            "answerIndex": 2,
+            "explanation": "Pre-order traversal visits Root → Left → Right."
+        },
+        {
+            "id": "q5",
+            "text": "What is the minimum number of edges in a connected graph with n vertices?",
+            "options": [
+                "n",
+                "n-1",
+                "n+1",
+                "2n"
+            ],
+            "answerIndex": 1,
+            "explanation": "A tree (minimum connected graph) has exactly n-1 edges."
+        }
+    ]
+}

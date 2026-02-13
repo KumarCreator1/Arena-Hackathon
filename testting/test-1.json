@@ -1,0 +1,61 @@
+{
+  "config": {
+    "title": "AIML & Science Demo Quiz",
+    "durationMinutes": 10,
+    "marking": {
+      "correct": 4,
+      "incorrect": -1
+    }
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "text": "What is the result of the following quadratic equation when $x = 2$?\n$f(x) = x^2 + 3x - 10$",
+      "options": ["0", "2", "-2", "10"],
+      "answerIndex": 0,
+      "explanation": "Substituting $x=2$: $2^2 + 3(2) - 10 = 4 + 6 - 10 = 0$."
+    },
+    {
+      "id": "q2",
+      "text": "कंप्यूटर विज्ञान में 'RAM' का पूर्ण रूप क्या है?",
+      "options": [
+        "Read Access Memory",
+        "Random Access Memory",
+        "Run Any Memory",
+        "Rapid Application Module"
+      ],
+      "answerIndex": 1,
+      "explanation": "RAM stands for Random Access Memory, जो एक volatile memory है।"
+    },
+    {
+      "id": "q3",
+      "text": "Which of the following represents the chemical formula for Glucose?",
+      "options": [
+        "$C_6H_{12}O_6$",
+        "$H_2SO_4$",
+        "$CH_4$",
+        "$NaCl$"
+      ],
+      "answerIndex": 0,
+      "explanation": "Glucose is a simple sugar with the molecular formula $C_6H_{12}O_6$."
+    },
+    {
+      "id": "q4",
+      "text": "Identify the logic gate shown in the diagram. (Assuming a diagram is present)",
+      "media": {
+        "type": "image",
+        "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/AND_ANSI.svg/200px-AND_ANSI.svg.png"
+      },
+      "options": ["OR Gate", "AND Gate", "NOT Gate", "NAND Gate"],
+      "answerIndex": 1,
+      "explanation": "The D-shaped symbol represents a standard AND Gate."
+    },
+    {
+      "id": "q5",
+      "text": "यदि $\\sin(\\theta) = 1/2$, तो $\\theta$ का मान क्या होगा?",
+      "options": ["$30^\\circ$", "$45^\\circ$", "$60^\\circ$", "$90^\\circ$"],
+      "answerIndex": 0,
+      "explanation": "Standard trigonometric table shows that $\\sin(30^\\circ) = 0.5$."
+    }
+  ]
+}
