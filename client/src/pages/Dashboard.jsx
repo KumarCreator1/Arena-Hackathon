@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import api from '../services/api.js';
 
@@ -164,6 +164,28 @@ function AdminView({ user }) {
 // STUDENT VIEW
 // ═══════════════════════════════════════════════════════════
 function StudentView({ user }) {
+    const [accessCode, setAccessCode] = useState('');
+    const [joining, setJoining] = useState(false);
+    const [error, setError] = useState('');
+    const navigate = useNavigate();
+
+    const handleJoin = async (e) => {
+        e.preventDefault();
+        if (!accessCode.trim()) return;
+
+        setJoining(true);
+        setError('');
+
+        try {
+            const data = await api.post('/exams/join', { accessCode });
+            navigate(`/exam/${data.exam.id}`);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setJoining(false);
+        }
+    };
+
     return (
         <>
             <h1 style={{ fontSize: 'var(--text-3xl)', fontWeight: 800, marginBottom: 8 }}>
@@ -173,6 +195,39 @@ function StudentView({ user }) {
                 Student Dashboard — Your exam sessions will appear here.
             </p>
 
+            {/* Join Exam Card */}
+            <div className="glass-card" style={{ padding: 32, marginTop: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                <h2 style={{ fontSize: 'var(--text-xl)', fontWeight: 600, marginBottom: 12 }}>
+                    🚀 Join an Exam
+                </h2>
+                <p className="text-muted" style={{ marginBottom: 24, maxWidth: 400 }}>
+                    Enter the unique 6-character access code provided by your instructor to enter the exam room.
+                </p>
+
+                <form onSubmit={handleJoin} style={{ display: 'flex', gap: 12, width: '100%', maxWidth: 400 }}>
+                    <input
+                        type="text"
+                        className="input-field"
+                        placeholder="ACCESS CODE"
+                        value={accessCode}
+                        onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
+                        maxLength={6}
+                        style={{
+                            textAlign: 'center',
+                            letterSpacing: '0.2em',
+                            fontWeight: 700,
+                            fontSize: 'var(--text-lg)',
+                            textTransform: 'uppercase'
+                        }}
+                    />
+                    <button type="submit" className="btn btn-primary" disabled={joining || !accessCode}>
+                        {joining ? <span className="spinner" /> : 'Join'}
+                    </button>
+                </form>
+
+                {error && <div className="text-danger mt-4 text-sm">{error}</div>}
+            </div>
+
             <div className="glass-card" style={{ padding: 32, marginTop: 24 }}>
                 <h2 style={{ fontSize: 'var(--text-xl)', fontWeight: 600, marginBottom: 12 }}>
                     🖥️ Getting Started
@@ -181,7 +236,7 @@ function StudentView({ user }) {
                     When an exam is scheduled, you'll see it here. You'll need to:
                 </p>
                 <ol className="text-muted" style={{ paddingLeft: 20, marginTop: 12, lineHeight: 2 }}>
-                    <li>Enter your exam access code</li>
+                    <li>Enter your exam access code above</li>
                     <li>Pair your mobile device as a rear-view camera (QR Code scan)</li>
                     <li>Complete the environment check</li>
                     <li>Enter the exam room</li>

@@ -5,6 +5,7 @@ import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import CreateExam from './pages/CreateExam.jsx';
+import ExamRoom from './pages/ExamRoom.jsx';
 import './index.css';
 
 export default function App() {
@@ -30,6 +31,14 @@ export default function App() {
             element={
               <ProtectedRoute requiredRole="admin">
                 <CreateExam />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/exam/:id"
+            element={
+              <ProtectedRoute>
+                <ExamRoom />
               </ProtectedRoute>
             }
           />

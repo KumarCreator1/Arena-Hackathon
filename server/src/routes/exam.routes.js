@@ -415,4 +415,89 @@ router.get('/:id/questions', authenticate, async (req, res) => {
     }
 });
 
+import Submission from '../models/Submission.js';
+
+// ... (existing routes)
+
+/**
+ * POST /api/exams/:id/submit — Submit exam answers
+ * Body: { answers: { "0": 1, "1": 3, ... } }
+ */
+router.post('/:id/submit', authenticate, async (req, res) => {
+    try {
+        const { answers } = req.body;
+        const exam = await Exam.findById(req.params.id);
+
+        if (!exam) {
+            return res.status(404).json({ success: false, message: 'Exam not found' });
+        }
+
+        // Check if user is a participant
+        if (!exam.participants.includes(req.user.userId)) {
+            return res.status(403).json({ success: false, message: 'Not joined this exam' });
+        }
+
+        // Allow submission if status is live or recently completed (grace period handled by client/admin)
+        // For strictness, only 'live'.
+        if (exam.status !== 'live') {
+            return res.status(400).json({ success: false, message: `Exam is not live (${exam.status})` });
+        }
+
+        // Check if already submitted
+        const existingSubmission = await Submission.findOne({
+            exam: exam._id,
+            student: req.user.userId,
+        });
+
+        if (existingSubmission) {
+            return res.status(400).json({ success: false, message: 'Already submitted' });
+        }
+
+        // Calculate Score
+        let score = 0;
+        let correctCount = 0;
+        let incorrectCount = 0;
+
+        const { correct, incorrect } = exam.markingScheme;
+        const totalMarks = exam.questions.length * correct;
+
+        exam.questions.forEach((q, index) => {
+            const studentAnswer = answers[index]; // array index or q.id if map is key-based
+            if (studentAnswer !== undefined && studentAnswer !== null) {
+                if (studentAnswer === q.answerIndex) {
+                    score += correct;
+                    correctCount++;
+                } else {
+                    score += incorrect;
+                    incorrectCount++;
+                }
+            }
+        });
+
+        const submission = await Submission.create({
+            exam: exam._id,
+            student: req.user.userId,
+            answers,
+            score,
+            totalMarks,
+            submittedAt: new Date(),
+        });
+
+        res.json({
+            success: true,
+            message: 'Exam submitted successfully',
+            result: {
+                score,
+                totalMarks,
+                correctCount,
+                incorrectCount,
+            },
+        });
+
+    } catch (error) {
+        console.error('Submit exam error:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
 export default router;
