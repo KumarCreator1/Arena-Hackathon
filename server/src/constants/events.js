@@ -16,30 +16,13 @@ export const LEAVE_EXAM = 'exam:leave';
 export const EXAM_STATE = 'exam:state';
 export const EXAM_USER_JOINED = 'exam:user_joined';
 export const EXAM_USER_LEFT = 'exam:user_left';
+export const EXAM_START = 'exam:start';
+export const EXAM_END = 'exam:end';
 
-// ─── Phase 2: Device Tethering ───────────────────────────────
-// export const TETHER_REQUEST = 'tether:request';
-// export const TETHER_CONNECTED = 'tether:connected';
-// export const TETHER_DISCONNECTED = 'tether:disconnected';
-// export const TETHER_STATUS = 'tether:status';
+// ─── Phase 2+: Device Tethering & Mobile ─────────────────────
+export const MOBILE_JOIN = 'mobile:join';
+export const MOBILE_CONNECTED = 'mobile:connected';
 
 // ─── Phase 3: AI Violation Events ────────────────────────────
-// export const VIOLATION_DETECTED = 'violation:detected';
-// export const VIOLATION_RESOLVED = 'violation:resolved';
-
-// ─── Phase 4: Laptop Security ────────────────────────────────
-// export const SECURITY_TAB_SWITCH = 'security:tab_switch';
-// export const SECURITY_FULLSCREEN_EXIT = 'security:fullscreen_exit';
-// export const SECURITY_VM_DETECTED = 'security:vm_detected';
-
-// ─── Phase 5: Admin / Trust Score ────────────────────────────
-// export const TRUST_UPDATE = 'trust:update';
-// export const ADMIN_WARN = 'admin:warn';
-// export const ADMIN_TERMINATE = 'admin:terminate';
-// export const ADMIN_PAUSE = 'admin:pause';
-// export const ADMIN_RESUME = 'admin:resume';
-
-// ─── Phase 6: Resilience ─────────────────────────────────────
-// export const RECONNECT_REQUEST = 'reconnect:request';
-// export const RECONNECT_VERIFIED = 'reconnect:verified';
-// export const DEVICE_DROP = 'device:drop';
+export const VIOLATION_ALERT = 'violation:alert';
+export const VIOLATION_DETECTED = 'violation:detected'; // For admin/laptop

@@ -1,82 +1,99 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext.jsx';
-import api from '../services/api.js';
+import { useState, useRef, useEffect } from 'react';
+import { useNavigate, useParams, Link } from 'react-router-dom';
+import 'katex/dist/katex.min.css';
 import LatexRenderer from '../components/LatexRenderer.jsx';
-
-// Helper to format date for datetime-local input (YYYY-MM-DDTHH:mm)
-const formatDateForInput = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return ''; // Invalid date
-
-    // Adjust to local ISO string (handling timezone offset)
-    const offset = date.getTimezoneOffset() * 60000;
-    const localISOTime = new Date(date.getTime() - offset).toISOString().slice(0, 16);
-    return localISOTime;
-};
+import api from '../services/api.js';
 
 export default function CreateExam() {
-    const { user } = useAuth();
     const navigate = useNavigate();
+    const { id } = useParams(); // For edit mode
+    const isEditing = Boolean(id);
 
-    const [title, setTitle] = useState('');
-    const [maxStudents, setMaxStudents] = useState('');
-    const [durationMinutes, setDurationMinutes] = useState('');
-    const [startTime, setStartTime] = useState('');
-    const [markCorrect, setMarkCorrect] = useState(4);
-    const [markIncorrect, setMarkIncorrect] = useState(-1);
-    const [questions, setQuestions] = useState(null);
-    const [fileName, setFileName] = useState('');
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [submitting, setSubmitting] = useState(false);
+
+    // Form State
+    const [title, setTitle] = useState('');
+    const [maxStudents, setMaxStudents] = useState(50);
+    const [duration, setDuration] = useState(60);
+    const [startTime, setStartTime] = useState('');
+    const [marking, setMarking] = useState({ correct: 4, incorrect: -1 });
+    const [questions, setQuestions] = useState([]);
+
+    // File Upload State
+    const fileInputRef = useRef(null);
+    const [fileName, setFileName] = useState('');
+
+    useEffect(() => {
+        if (isEditing) {
+            fetchExamDetails();
+        }
+    }, [id]);
+
+    const fetchExamDetails = async () => {
+        try {
+            setLoading(true);
+            const res = await api.get(`/exams/${id}`);
+            const exam = res.exam;
+
+            setTitle(exam.title);
+            setMaxStudents(exam.maxStudents);
+            setDuration(exam.durationMinutes);
+            setMarking(exam.markingScheme);
+            setQuestions(exam.questions || []); // Admin view includes questions
+
+            // Format date for datetime-local input
+            if (exam.startTime) {
+                setStartTime(formatDateForInput(new Date(exam.startTime)));
+            }
+        } catch (err) {
+            setError('Failed to load exam details: ' + err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const formatDateForInput = (date) => {
+        const offset = date.getTimezoneOffset() * 60000;
+        const localISOTime = (new Date(date - offset)).toISOString().slice(0, 16);
+        return localISOTime;
+    };
 
     const handleFileUpload = (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
         setFileName(file.name);
-        setError('');
-
         const reader = new FileReader();
         reader.onload = (event) => {
             try {
-                const data = JSON.parse(event.target.result);
+                const json = JSON.parse(event.target.result);
 
-                // Support both formats: { config, questions } or raw array
-                let parsedQuestions;
-                if (data.questions && Array.isArray(data.questions)) {
-                    parsedQuestions = data.questions;
-                    // Auto-fill config if present
-                    if (data.config) {
-                        if (data.config.title && !title) setTitle(data.config.title);
-                        if (data.config.durationMinutes && !durationMinutes) setDurationMinutes(String(data.config.durationMinutes));
-                        if (data.config.marking) {
-                            setMarkCorrect(data.config.marking.correct ?? 4);
-                            setMarkIncorrect(data.config.marking.incorrect ?? -1);
+                if (Array.isArray(json)) {
+                    // Old format: just questions
+                    setQuestions(json);
+                    setError('');
+                } else if (json.questions && Array.isArray(json.questions)) {
+                    // Standard format: { config, questions }
+                    setQuestions(json.questions);
+
+                    if (json.config) {
+                        if (json.config.title) setTitle(json.config.title);
+                        if (json.config.durationMinutes) setDuration(json.config.durationMinutes);
+                        if (json.config.maxStudents) setMaxStudents(json.config.maxStudents); // Support if added to standard
+                        if (json.config.marking) {
+                            setMarking({
+                                correct: json.config.marking.correct || 4,
+                                incorrect: json.config.marking.incorrect || -1
+                            });
                         }
                     }
-                } else if (Array.isArray(data)) {
-                    parsedQuestions = data;
+                    setError('');
                 } else {
-                    setError('JSON must contain a "questions" array or be a raw array');
-                    return;
+                    setError('Invalid JSON format. Expected an array of questions or standard exam object.');
                 }
-
-                // Validate
-                for (let i = 0; i < parsedQuestions.length; i++) {
-                    const q = parsedQuestions[i];
-                    if (!q.id || !q.text || !q.options || q.answerIndex === undefined) {
-                        setError(`Question ${i + 1} missing required fields (id, text, options, answerIndex)`);
-                        setQuestions(null);
-                        return;
-                    }
-                }
-
-                setQuestions(parsedQuestions);
-            } catch {
-                setError('Invalid JSON file — could not parse');
-                setQuestions(null);
+            } catch (err) {
+                setError('Error parsing JSON file. Please check syntax.');
             }
         };
         reader.readAsText(file);
@@ -85,263 +102,181 @@ export default function CreateExam() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+        setLoading(true);
 
-        if (!questions || questions.length === 0) {
-            setError('Please upload a valid JSON quiz file');
+        if (questions.length === 0) {
+            setError('Please upload at least one question.');
+            setLoading(false);
             return;
         }
 
-        setSubmitting(true);
+        const payload = {
+            config: {
+                title,
+                durationMinutes: parseInt(duration),
+                marking,
+            },
+            maxStudents: parseInt(maxStudents),
+            startTime: new Date(startTime).toISOString(),
+            questions,
+        };
 
         try {
-            const payload = {
-                config: {
-                    title,
-                    durationMinutes: Number(durationMinutes),
-                    marking: { correct: Number(markCorrect), incorrect: Number(markIncorrect) },
-                },
-                questions,
-                maxStudents: Number(maxStudents),
-                startTime: new Date(startTime).toISOString(), // Send as ISO string
-            };
-
-            await api.post('/exams', payload);
+            if (isEditing) {
+                await api.put(`/exams/${id}`, payload);
+                alert('Exam updated successfully!');
+            } else {
+                await api.post('/exams', payload);
+                alert('Exam created successfully!');
+            }
             navigate('/dashboard');
         } catch (err) {
-            setError(err.message);
+            setError(err.message || 'Failed to save exam');
         } finally {
-            setSubmitting(false);
+            setLoading(false);
         }
     };
 
     return (
         <div className="dashboard-layout">
-            {/* Nav */}
-            <nav className="dashboard-nav">
-                <Link to="/dashboard" className="dashboard-nav-brand" style={{ textDecoration: 'none' }}>
-                    <span style={{
-                        width: 28, height: 28,
-                        background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
-                        borderRadius: 'var(--radius-sm)', display: 'flex',
-                        alignItems: 'center', justifyContent: 'center', fontSize: 14,
-                    }}>◈</span>
-                    Parallax
-                </Link>
-                <div className="dashboard-nav-actions">
-                    <span className="badge badge-warning">{user?.role}</span>
-                    <span className="text-sm text-muted">{user?.name}</span>
-                </div>
-            </nav>
-
-            {/* Content */}
-            <div className="dashboard-content animate-fade-in" style={{ maxWidth: 720 }}>
+            <div className="glass-card" style={{ maxWidth: 800, margin: '40px auto', padding: 40 }}>
                 <Link to="/dashboard" className="text-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginBottom: 16 }}>
                     ← Back to Dashboard
                 </Link>
-
                 <h1 style={{ fontSize: 'var(--text-3xl)', fontWeight: 800, marginBottom: 8 }}>
-                    Create Exam
+                    {isEditing ? 'Edit Exam' : 'Create New Exam'}
                 </h1>
-                <p className="text-muted mb-2">
-                    Set up exam parameters and upload your quiz questions.
+                <p className="text-muted" style={{ marginBottom: 32 }}>
+                    {isEditing ? 'Update exam details and questions.' : 'Configure exam details and upload your question bank.'}
                 </p>
 
-                {error && <div className="alert alert-error mb-2">{error}</div>}
+                {error && (
+                    <div style={{
+                        padding: 16, background: 'rgba(239, 68, 68, 0.1)',
+                        border: '1px solid var(--color-danger)', borderRadius: 8,
+                        marginBottom: 24, color: 'var(--color-danger)'
+                    }}>
+                        ⚠️ {error}
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit}>
-                    {/* Exam Details Card */}
-                    <div className="glass-card" style={{ padding: 28, marginBottom: 20 }}>
-                        <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 600, marginBottom: 20 }}>
-                            📋 Exam Details
-                        </h2>
+                    <div style={{ marginBottom: 24 }}>
+                        <label className="label">Exam Title</label>
+                        <input
+                            type="text" className="input-field"
+                            value={title} onChange={e => setTitle(e.target.value)}
+                            required
+                            placeholder="e.g. Physics Mid-Term 2024"
+                        />
+                    </div>
 
-                        <div className="input-group">
-                            <label className="input-label" htmlFor="title">Exam Title</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
+                        <div>
+                            <label className="label">Max Students</label>
                             <input
-                                id="title"
-                                className="input-field"
-                                type="text"
-                                placeholder="e.g. Midterm — Data Structures"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                required
+                                type="number" className="input-field"
+                                value={maxStudents} onChange={e => setMaxStudents(e.target.value)}
+                                min="1" required
                             />
                         </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                            <div className="input-group">
-                                <label className="input-label" htmlFor="maxStudents">Max Students</label>
-                                <input
-                                    id="maxStudents"
-                                    className="input-field"
-                                    type="number"
-                                    placeholder="e.g. 60"
-                                    min="1"
-                                    value={maxStudents}
-                                    onChange={(e) => setMaxStudents(e.target.value)}
-                                    required
-                                />
-                            </div>
-
-                            <div className="input-group">
-                                <label className="input-label" htmlFor="duration">Duration (minutes)</label>
-                                <input
-                                    id="duration"
-                                    className="input-field"
-                                    type="number"
-                                    placeholder="e.g. 45"
-                                    min="1"
-                                    value={durationMinutes}
-                                    onChange={(e) => setDurationMinutes(e.target.value)}
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        <div className="input-group">
-                            <label className="input-label" htmlFor="startTime">Start Date & Time</label>
+                        <div>
+                            <label className="label">Duration (Minutes)</label>
                             <input
-                                id="startTime"
-                                className="input-field"
-                                type="datetime-local"
-                                value={startTime}
-                                onChange={(e) => setStartTime(e.target.value)}
-                                required
-                                style={{ colorScheme: 'dark' }}
+                                type="number" className="input-field"
+                                value={duration} onChange={e => setDuration(e.target.value)}
+                                min="1" required
                             />
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                            <div className="input-group">
-                                <label className="input-label" htmlFor="markCorrect">Marks per Correct (+ )</label>
-                                <input
-                                    id="markCorrect"
-                                    className="input-field"
-                                    type="number"
-                                    value={markCorrect}
-                                    onChange={(e) => setMarkCorrect(e.target.value)}
-                                />
-                            </div>
-                            <div className="input-group">
-                                <label className="input-label" htmlFor="markIncorrect">Marks per Incorrect (−)</label>
-                                <input
-                                    id="markIncorrect"
-                                    className="input-field"
-                                    type="number"
-                                    value={markIncorrect}
-                                    onChange={(e) => setMarkIncorrect(e.target.value)}
-                                />
-                            </div>
                         </div>
                     </div>
 
-                    {/* Upload Card */}
-                    <div className="glass-card" style={{ padding: 28, marginBottom: 20 }}>
-                        <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 600, marginBottom: 20 }}>
-                            📎 Quiz Questions (JSON)
+                    <div style={{ marginBottom: 24 }}>
+                        <label className="label">Start Date & Time</label>
+                        <input
+                            type="datetime-local" className="input-field"
+                            value={startTime} onChange={e => setStartTime(e.target.value)}
+                            required
+                            style={{ colorScheme: 'dark' }}
+                        />
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 32 }}>
+                        <div>
+                            <label className="label">Marks per Correct</label>
+                            <input
+                                type="number" className="input-field"
+                                value={marking.correct} onChange={e => setMarking(prev => ({ ...prev, correct: Number(e.target.value) }))}
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label className="label">Marks per Incorrect</label>
+                            <input
+                                type="number" className="input-field"
+                                value={marking.incorrect} onChange={e => setMarking(prev => ({ ...prev, incorrect: Number(e.target.value) }))}
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: 32, marginBottom: 32 }}>
+                        <h2 style={{ fontSize: 'var(--text-xl)', fontWeight: 600, marginBottom: 16 }}>
+                            Questions ({questions.length})
                         </h2>
 
-                        <label
-                            htmlFor="quiz-file"
+                        <input
+                            type="file"
+                            accept=".json"
+                            ref={fileInputRef}
+                            style={{ display: 'none' }}
+                            onChange={handleFileUpload}
+                        />
+
+                        <div
+                            onClick={() => fileInputRef.current?.click()}
                             style={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                gap: 12,
-                                padding: 32,
                                 border: '2px dashed var(--border-default)',
                                 borderRadius: 'var(--radius-md)',
-                                cursor: 'pointer',
-                                transition: 'all var(--transition-fast)',
+                                padding: 32,
                                 textAlign: 'center',
+                                cursor: 'pointer',
+                                marginBottom: 24,
+                                background: fileName ? 'rgba(99, 102, 241, 0.05)' : 'transparent'
                             }}
-                            onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--accent-primary)'}
-                            onMouseOut={(e) => e.currentTarget.style.borderColor = 'var(--border-default)'}
                         >
-                            <span style={{ fontSize: 32 }}>
-                                {questions ? '✅' : '📤'}
-                            </span>
-                            <span className="text-muted text-sm">
-                                {fileName
-                                    ? `${fileName} — ${questions ? `${questions.length} questions loaded` : 'Error in file'}`
-                                    : 'Click to upload or drag & drop a JSON file'}
-                            </span>
-                            <input
-                                id="quiz-file"
-                                type="file"
-                                accept=".json"
-                                onChange={handleFileUpload}
-                                style={{ display: 'none' }}
-                            />
-                        </label>
-                    </div>
-
-                    {/* Question Preview */}
-                    {questions && questions.length > 0 && (
-                        <div className="glass-card" style={{ padding: 28, marginBottom: 20 }}>
-                            <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 600, marginBottom: 16 }}>
-                                👁️ Question Preview ({questions.length})
-                            </h2>
-                            <div style={{ maxHeight: 400, overflowY: 'auto', paddingRight: 8 }}>
-                                {questions.map((q, i) => (
-                                    <div
-                                        key={q.id}
-                                        style={{
-                                            padding: 16,
-                                            background: 'var(--bg-primary)',
-                                            borderRadius: 'var(--radius-md)',
-                                            border: '1px solid var(--border-subtle)',
-                                            marginBottom: i < questions.length - 1 ? 12 : 0,
-                                        }}
-                                    >
-                                        <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', marginBottom: 6 }}>
-                                            <span className="font-mono">{q.id}</span>
-                                        </div>
-                                        {/* Render question text with LatexRenderer */}
-                                        <div style={{ fontWeight: 500, marginBottom: 10 }}>
-                                            <LatexRenderer>{q.text}</LatexRenderer>
-                                        </div>
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-                                            {q.options.map((opt, j) => (
-                                                <div
-                                                    key={j}
-                                                    style={{
-                                                        padding: '6px 10px',
-                                                        borderRadius: 'var(--radius-sm)',
-                                                        fontSize: 'var(--text-sm)',
-                                                        background: j === q.answerIndex ? 'var(--color-success-bg)' : 'var(--bg-secondary)',
-                                                        color: j === q.answerIndex ? 'var(--color-success)' : 'var(--text-secondary)',
-                                                        border: `1px solid ${j === q.answerIndex ? 'rgba(34,197,94,0.2)' : 'var(--border-subtle)'}`,
-                                                    }}
-                                                >
-                                                    <span style={{ marginRight: 8, fontWeight: 600 }}>{String.fromCharCode(65 + j)}.</span>
-                                                    <LatexRenderer>{opt}</LatexRenderer>
-                                                </div>
-                                            ))}
-                                        </div>
-                                        {q.explanation && (
-                                            <div style={{ marginTop: 8, fontSize: 'var(--text-sm)', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                                                💡 <LatexRenderer>{q.explanation}</LatexRenderer>
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
+                            <div style={{ fontSize: 32, marginBottom: 8 }}>📄</div>
+                            <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                                {fileName || (isEditing && questions.length > 0 ? 'Upload replacement JSON file' : 'Upload Question Bank (JSON)')}
+                            </div>
+                            <div className="text-sm text-muted">
+                                Click to browse files
                             </div>
                         </div>
-                    )}
 
-                    <button
-                        type="submit"
-                        className="btn btn-primary btn-full"
-                        disabled={submitting || !questions}
-                        style={{ padding: '14px 24px', fontSize: 'var(--text-lg)' }}
-                    >
-                        {submitting ? (
-                            <><span className="spinner" /> Creating Exam...</>
-                        ) : (
-                            '🚀 Create Exam'
+                        {questions.length > 0 && (
+                            <div style={{
+                                background: 'var(--bg-elevated)', padding: 16, borderRadius: 8,
+                                maxHeight: 200, overflowY: 'auto'
+                            }}>
+                                <div className="text-sm text-muted" style={{ marginBottom: 12 }}>Preview (First 3 questions):</div>
+                                {questions.slice(0, 3).map((q, i) => (
+                                    <div key={i} style={{ marginBottom: 12, paddingBottom: 12, borderBottom: '1px solid var(--border-subtle)' }}>
+                                        <div style={{ fontWeight: 600, fontSize: 14 }}>Q{i + 1}: <LatexRenderer>{q.text}</LatexRenderer></div>
+                                    </div>
+                                ))}
+                                {questions.length > 3 && <div className="text-sm text-muted">...and {questions.length - 3} more</div>}
+                            </div>
                         )}
-                    </button>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 16, justifyContent: 'flex-end' }}>
+                        <button type="button" className="btn btn-ghost" onClick={() => navigate('/dashboard')}>
+                            Cancel
+                        </button>
+                        <button type="submit" className="btn btn-primary" disabled={loading}>
+                            {loading ? <span className="spinner" /> : (isEditing ? 'Update Exam' : 'Create Exam')}
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>

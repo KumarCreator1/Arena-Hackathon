@@ -45,6 +45,7 @@ export default function Dashboard() {
 function AdminView({ user }) {
     const [exams, setExams] = useState([]);
     const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchExams = async () => {
@@ -60,6 +61,16 @@ function AdminView({ user }) {
         fetchExams();
     }, []);
 
+    const handleDelete = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this exam? This action cannot be undone.')) return;
+        try {
+            await api.delete(`/exams/${id}`);
+            setExams(exams.filter(e => e.id !== id));
+        } catch (err) {
+            alert('Failed to delete exam: ' + err.message);
+        }
+    };
+
     const statusColors = {
         draft: 'badge-info',
         scheduled: 'badge-warning',
@@ -74,6 +85,7 @@ function AdminView({ user }) {
                     <h1 style={{ fontSize: 'var(--text-3xl)', fontWeight: 800, marginBottom: 4 }}>
                         Admin Control Center
                     </h1>
+// ... (rest of render until the buttons)
                     <p className="text-muted">
                         Monitor exams, manage students, and review integrity reports.
                     </p>
@@ -150,6 +162,43 @@ function AdminView({ user }) {
                                     <span className={`badge ${statusColors[exam.status] || 'badge-info'}`}>
                                         {exam.status}
                                     </span>
+                                    <div style={{ display: 'flex', gap: 4, marginLeft: 12 }}>
+                                        <button
+                                            className="btn btn-primary"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                navigate(`/exams/${exam.id}/monitor`);
+                                            }}
+                                            style={{ padding: '4px 12px', fontSize: 14, marginRight: 8 }}
+                                            title="Open Control Room"
+                                        >
+                                            📡 Monitor
+                                        </button>
+                                        {(exam.status === 'draft' || exam.status === 'scheduled') && (
+                                            <button
+                                                className="btn btn-ghost"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    navigate(`/exams/edit/${exam.id}`);
+                                                }}
+                                                style={{ padding: '4px 8px', fontSize: 16 }}
+                                                title="Edit Exam"
+                                            >
+                                                ✏️
+                                            </button>
+                                        )}
+                                        <button
+                                            className="btn btn-ghost"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDelete(exam.id);
+                                            }}
+                                            style={{ padding: '4px 8px', fontSize: 16, color: 'var(--color-danger)' }}
+                                            title="Delete Exam"
+                                        >
+                                            🗑️
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         ))}

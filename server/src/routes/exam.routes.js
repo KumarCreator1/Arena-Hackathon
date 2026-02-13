@@ -80,6 +80,7 @@ router.post('/', authenticate, authorize('admin'), async (req, res) => {
             startTime: new Date(startTime),
             markingScheme: config.marking || { correct: 4, incorrect: -1 },
             questions,
+            status: 'scheduled',
         });
 
         res.status(201).json({
@@ -184,10 +185,10 @@ router.put('/:id', authenticate, authorize('admin'), async (req, res) => {
             });
         }
 
-        if (exam.status !== 'draft') {
+        if (exam.status !== 'draft' && exam.status !== 'scheduled') {
             return res.status(400).json({
                 success: false,
-                message: `Cannot edit exam in "${exam.status}" status — only drafts can be modified`,
+                message: `Cannot edit exam in "${exam.status}" status — only drafts and scheduled exams can be modified`,
             });
         }
 
@@ -198,22 +199,60 @@ router.put('/:id', authenticate, authorize('admin'), async (req, res) => {
         if (config?.marking) exam.markingScheme = config.marking;
         if (maxStudents) exam.maxStudents = maxStudents;
         if (startTime) exam.startTime = new Date(startTime);
-        if (questions && Array.isArray(questions)) exam.questions = questions;
+
+        // If exam was in draft, promote to scheduled on save (publishing)
+        if (exam.status === 'draft') {
+            exam.status = 'scheduled';
+        }
+
+        if (questions && questions.length > 0) {
+            // Validate questions similar to create... (simplified for now as schema handles some)
+            exam.questions = questions;
+        }
 
         await exam.save();
 
         res.json({
             success: true,
-            exam: {
-                id: exam._id,
-                title: exam.title,
-                accessCode: exam.accessCode,
-                status: exam.status,
-                questionCount: exam.questions.length,
-            },
+            message: 'Exam updated successfully',
+            exam,
         });
     } catch (error) {
         console.error('Update exam error:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+/**
+ * PATCH /api/exams/:id/status — Update exam status (lifecycle)
+ */
+router.patch('/:id/status', authenticate, authorize('admin'), async (req, res) => {
+    try {
+        const { status } = req.body;
+        const validStatuses = ['draft', 'scheduled', 'live', 'completed'];
+
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: `Invalid status. Must be one of: ${validStatuses.join(', ')}`,
+            });
+        }
+
+        const exam = await Exam.findOne({
+            _id: req.params.id,
+            createdBy: req.user.userId,
+        });
+
+        if (!exam) {
+            return res.status(404).json({ success: false, message: 'Exam not found' });
+        }
+
+        exam.status = status;
+        await exam.save();
+
+        res.json({ success: true, message: `Exam status updated to ${status}`, status });
+    } catch (error) {
+        console.error('Update status error:', error);
         res.status(500).json({ success: false, message: 'Server error' });
     }
 });
@@ -389,11 +428,26 @@ router.get('/:id/questions', authenticate, async (req, res) => {
             });
         }
 
-        if (exam.status !== 'live') {
+        const now = new Date();
+        const startTime = new Date(exam.startTime);
+
+        // Allow if live OR (scheduled AND time reached)
+        const isLive = exam.status === 'live';
+        const isAutoStart = exam.status === 'scheduled' && now >= startTime;
+
+        if (!isLive && !isAutoStart) {
             return res.status(400).json({
                 success: false,
-                message: `Exam is not live (status: ${exam.status})`,
+                message: `Exam is not live. Status: ${exam.status}. Starts at: ${startTime.toLocaleString()}`,
             });
+        }
+
+        // If auto-starting, we should ideally update status to live, 
+        // to avoid repeated time checks or inconsistent states.
+        // However, updating in a GET request is side-effectual but acceptable here for "lazy" state transition.
+        if (isAutoStart && exam.status === 'scheduled') {
+            exam.status = 'live';
+            await exam.save();
         }
 
         // Strip answers and explanations
