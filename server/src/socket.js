@@ -10,6 +10,7 @@
  */
 
 import { Server } from 'socket.io';
+import jwt from 'jsonwebtoken';
 import connectionManager from './services/ConnectionManager.js';
 import {
     JOIN_EXAM,
@@ -18,6 +19,30 @@ import {
     EXAM_USER_JOINED,
     EXAM_USER_LEFT,
 } from './constants/events.js';
+
+/**
+ * Socket.io JWT Authentication Middleware
+ * Verifies token from socket.handshake.auth.token
+ * Attaches decoded user to socket.user
+ */
+function socketAuthMiddleware(socket, next) {
+    const token = socket.handshake.auth?.token;
+
+    if (!token) {
+        return next(new Error('Authentication required — provide token in handshake auth'));
+    }
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        socket.user = { userId: decoded.userId, role: decoded.role };
+        next();
+    } catch (error) {
+        if (error.name === 'TokenExpiredError') {
+            return next(new Error('Token expired — please login again'));
+        }
+        return next(new Error('Invalid token'));
+    }
+}
 
 /** @type {Server} */
 let io;
@@ -40,6 +65,7 @@ export function initSocket(httpServer) {
 
     // ─── /exam Namespace ─────────────────────────────────────
     const examNamespace = io.of('/exam');
+    examNamespace.use(socketAuthMiddleware);
 
     examNamespace.on('connection', (socket) => {
         console.log(`📡 [/exam] Connected: ${socket.id}`);
@@ -48,9 +74,12 @@ export function initSocket(httpServer) {
          * JOIN_EXAM — Student joins an exam room.
          * Payload: { userId, examId, device? }
          */
-        socket.on(JOIN_EXAM, ({ userId, examId, device = 'laptop' }) => {
-            if (!userId || !examId) {
-                socket.emit('error', { message: 'userId and examId are required' });
+        socket.on(JOIN_EXAM, ({ examId, device = 'laptop' }) => {
+            // userId comes from authenticated JWT, not client payload
+            const userId = socket.user.userId;
+
+            if (!examId) {
+                socket.emit('error', { message: 'examId is required' });
                 return;
             }
 
@@ -59,7 +88,7 @@ export function initSocket(httpServer) {
             // Register in connection manager
             connectionManager.addUser(socket.id, {
                 userId,
-                role: 'student',
+                role: socket.user.role,
                 examId,
                 device,
             });
@@ -118,13 +147,22 @@ export function initSocket(httpServer) {
 
     // ─── /admin Namespace ────────────────────────────────────
     const adminNamespace = io.of('/admin');
+    adminNamespace.use(socketAuthMiddleware);
+
+    // Additional check: only 'admin' role can connect to /admin namespace
+    adminNamespace.use((socket, next) => {
+        if (socket.user.role !== 'admin') {
+            return next(new Error('Access denied — admin role required'));
+        }
+        next();
+    });
 
     adminNamespace.on('connection', (socket) => {
-        console.log(`🛡️  [/admin] Connected: ${socket.id}`);
+        console.log(`🛡️  [/admin] Connected: ${socket.id} (user: ${socket.user.userId})`);
 
         // Register admin in connection manager
         connectionManager.addUser(socket.id, {
-            userId: `admin-${socket.id}`,
+            userId: socket.user.userId,
             role: 'admin',
         });
 
