@@ -1,0 +1,12 @@
+# Exclude specific files
+credentials.json
+.env
+
+# Exclude directories
+node_modules/
+archive/
+dist/
+
+# Exclude files by pattern
+*.log
+*.temp

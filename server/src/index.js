@@ -2,8 +2,10 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
+import connectDB from './config/db.js';
 import { initSocket } from './socket.js';
 import connectionManager from './services/ConnectionManager.js';
+import authRoutes from './routes/auth.routes.js';
 
 dotenv.config();
 
@@ -16,6 +18,10 @@ const httpServer = createServer(app);
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// ─── Routes ─────────────────────────────────────────────────
+app.use('/api/auth', authRoutes);
 
 // Health check (includes live connection stats)
 app.get('/api/health', (req, res) => {
@@ -30,9 +36,11 @@ app.get('/api/health', (req, res) => {
 // Initialize Socket.io on the HTTP server
 initSocket(httpServer);
 
-// Start server
-httpServer.listen(PORT, () => {
-    console.log(`🚀 Parallax Server listening on port ${PORT}`);
+// Connect to MongoDB, then start server
+connectDB().then(() => {
+    httpServer.listen(PORT, () => {
+        console.log(`🚀 Parallax Server listening on port ${PORT}`);
+    });
 });
 
 export default app;
