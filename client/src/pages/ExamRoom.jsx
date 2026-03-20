@@ -179,22 +179,56 @@ export default function ExamRoom() {
     }
 
     if (status === 'completed') {
+        const showResults = exam?.proctoring?.showResults ?? true;
+
         return (
             <div className="flex-center" style={{ height: '100vh', flexDirection: 'column', gap: 24 }}>
                 <div style={{ fontSize: 64 }}>🎉</div>
                 <h1 style={{ fontSize: 32 }}>Exam Completed</h1>
                 <p>Your answers have been submitted.</p>
-                {exam?.result && (
+
+                {showResults && exam?.result ? (
                     <div style={{ padding: 24, background: 'var(--bg-elevated)', borderRadius: 8, textAlign: 'center' }}>
                         <div style={{ fontSize: 48, fontWeight: 700, color: 'var(--color-primary)' }}>
                             {exam.result.score} / {exam.result.totalMarks}
                         </div>
                         <div className="text-muted">Final Score</div>
                     </div>
+                ) : (
+                    <div style={{ padding: 16, background: 'var(--bg-elevated)', borderRadius: 8 }}>
+                        <p className="text-muted">Results will be released by the administrator later.</p>
+                    </div>
                 )}
+
                 <button className="btn btn-secondary" onClick={() => navigate('/dashboard')}>
                     Return to Dashboard
                 </button>
+            </div>
+        );
+    }
+
+    // Logic: Blocks exam if mobile is required but not connected
+    const requireMobile = exam?.proctoring?.requireMobile ?? false;
+
+    if (status === 'live' && requireMobile && !mobileConnected) {
+        return (
+            <div className="flex-center" style={{ height: '100vh', flexDirection: 'column', gap: 24, textAlign: 'center' }}>
+                <div style={{ fontSize: 64 }}>📱</div>
+                <h1 style={{ fontSize: 24 }}>Mobile Setup Required</h1>
+                <div style={{ maxWidth: 400, margin: '0 auto', color: 'var(--text-muted)' }}>
+                    This exam requires a secondary mobile camera for proctoring.
+                    Please scan the QR code to pair your device.
+                </div>
+
+                {sessionId && (
+                    <div style={{ background: 'white', padding: 16, borderRadius: 8, display: 'inline-block', marginTop: 16 }}>
+                        <QRCode value={`${window.location.origin}/mobile-cam/${sessionId}?token=${localStorage.getItem('token')}`} size={180} />
+                    </div>
+                )}
+
+                <div className="text-sm text-muted">
+                    Once connected, the exam will start automatically.
+                </div>
             </div>
         );
     }

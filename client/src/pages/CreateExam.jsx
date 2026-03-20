@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import 'katex/dist/katex.min.css';
 import LatexRenderer from '../components/LatexRenderer.jsx';
 import api from '../services/api.js';
+import { parseExamJson } from '../utils/examParser.js';
 
 export default function CreateExam() {
     const navigate = useNavigate();
@@ -18,6 +19,7 @@ export default function CreateExam() {
     const [duration, setDuration] = useState(60);
     const [startTime, setStartTime] = useState('');
     const [marking, setMarking] = useState({ correct: 4, incorrect: -1 });
+    const [proctoring, setProctoring] = useState({ requireMobile: false, showResults: true });
     const [questions, setQuestions] = useState([]);
 
     // File Upload State
@@ -40,6 +42,7 @@ export default function CreateExam() {
             setMaxStudents(exam.maxStudents);
             setDuration(exam.durationMinutes);
             setMarking(exam.markingScheme);
+            if (exam.proctoring) setProctoring(exam.proctoring);
             setQuestions(exam.questions || []); // Admin view includes questions
 
             // Format date for datetime-local input
@@ -59,6 +62,8 @@ export default function CreateExam() {
         return localISOTime;
     };
 
+
+
     const handleFileUpload = (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -66,34 +71,35 @@ export default function CreateExam() {
         setFileName(file.name);
         const reader = new FileReader();
         reader.onload = (event) => {
-            try {
-                const json = JSON.parse(event.target.result);
+            const result = parseExamJson(event.target.result);
 
-                if (Array.isArray(json)) {
-                    // Old format: just questions
-                    setQuestions(json);
-                    setError('');
-                } else if (json.questions && Array.isArray(json.questions)) {
-                    // Standard format: { config, questions }
-                    setQuestions(json.questions);
+            if (result.valid) {
+                const { questions: newQuestions, config } = result.data;
+                setQuestions(newQuestions);
 
-                    if (json.config) {
-                        if (json.config.title) setTitle(json.config.title);
-                        if (json.config.durationMinutes) setDuration(json.config.durationMinutes);
-                        if (json.config.maxStudents) setMaxStudents(json.config.maxStudents); // Support if added to standard
-                        if (json.config.marking) {
-                            setMarking({
-                                correct: json.config.marking.correct || 4,
-                                incorrect: json.config.marking.incorrect || -1
-                            });
-                        }
+                // If standard format with config, update form fields
+                if (result.format === 'standard' && config) {
+                    if (config.title) setTitle(config.title);
+                    if (config.durationMinutes) setDuration(config.durationMinutes);
+                    if (config.maxStudents) setMaxStudents(config.maxStudents);
+
+                    if (config.marking) {
+                        setMarking({
+                            correct: config.marking.correct ?? 4,
+                            incorrect: config.marking.incorrect ?? -1
+                        });
                     }
-                    setError('');
-                } else {
-                    setError('Invalid JSON format. Expected an array of questions or standard exam object.');
+
+                    if (config.proctoring) {
+                        setProctoring({
+                            requireMobile: config.proctoring.requireMobile ?? false,
+                            showResults: config.proctoring.showResults ?? true
+                        });
+                    }
                 }
-            } catch (err) {
-                setError('Error parsing JSON file. Please check syntax.');
+                setError('');
+            } else {
+                setError(result.error);
             }
         };
         reader.readAsText(file);
@@ -115,6 +121,7 @@ export default function CreateExam() {
                 title,
                 durationMinutes: parseInt(duration),
                 marking,
+                proctoring,
             },
             maxStudents: parseInt(maxStudents),
             startTime: new Date(startTime).toISOString(),
@@ -219,6 +226,38 @@ export default function CreateExam() {
                         </div>
                     </div>
 
+
+                    <div style={{ marginBottom: 32, padding: 16, background: 'rgba(99, 102, 241, 0.05)', borderRadius: 8, border: '1px solid var(--border-subtle)' }}>
+                        <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: 16 }}>🛡️ Proctoring Options</h3>
+                        <div style={{ display: 'flex', gap: 32 }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={proctoring.requireMobile}
+                                    onChange={e => setProctoring(prev => ({ ...prev, requireMobile: e.target.checked }))}
+                                    style={{ width: 16, height: 16 }}
+                                />
+                                <div>
+                                    <div style={{ fontWeight: 500 }}>Require Mobile (Overhead)</div>
+                                    <div className="text-sm text-muted">Students must pair phone to start</div>
+                                </div>
+                            </label>
+
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={proctoring.showResults}
+                                    onChange={e => setProctoring(prev => ({ ...prev, showResults: e.target.checked }))}
+                                    style={{ width: 16, height: 16 }}
+                                />
+                                <div>
+                                    <div style={{ fontWeight: 500 }}>Show Results Instantly</div>
+                                    <div className="text-sm text-muted">Display score after submission</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
                     <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: 32, marginBottom: 32 }}>
                         <h2 style={{ fontSize: 'var(--text-xl)', fontWeight: 600, marginBottom: 16 }}>
                             Questions ({questions.length})
@@ -278,7 +317,7 @@ export default function CreateExam() {
                         </button>
                     </div>
                 </form>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }

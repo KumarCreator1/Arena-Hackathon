@@ -88,6 +88,10 @@ const examSchema = new mongoose.Schema(
             type: markingSchema,
             default: () => ({ correct: 4, incorrect: -1 }),
         },
+        proctoring: {
+            requireMobile: { type: Boolean, default: false },
+            showResults: { type: Boolean, default: true },
+        },
         questions: {
             type: [questionSchema],
             required: true,

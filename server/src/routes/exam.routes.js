@@ -78,7 +78,8 @@ router.post('/', authenticate, authorize('admin'), async (req, res) => {
             maxStudents,
             durationMinutes: config.durationMinutes,
             startTime: new Date(startTime),
-            markingScheme: config.marking || { correct: 4, incorrect: -1 },
+            markingScheme: { ...{ correct: 4, incorrect: -1 }, ...config.marking },
+            proctoring: config.proctoring || { requireMobile: false, showResults: true },
             questions,
             status: 'scheduled',
         });
@@ -197,6 +198,7 @@ router.put('/:id', authenticate, authorize('admin'), async (req, res) => {
         if (config?.title) exam.title = config.title;
         if (config?.durationMinutes) exam.durationMinutes = config.durationMinutes;
         if (config?.marking) exam.markingScheme = config.marking;
+        if (config?.proctoring) exam.proctoring = config.proctoring;
         if (maxStudents) exam.maxStudents = maxStudents;
         if (startTime) exam.startTime = new Date(startTime);
 
@@ -459,7 +461,9 @@ router.get('/:id/questions', authenticate, async (req, res) => {
                 id: exam._id,
                 title: exam.title,
                 durationMinutes: exam.durationMinutes,
+                durationMinutes: exam.durationMinutes,
                 markingScheme: exam.markingScheme,
+                proctoring: exam.proctoring,
             },
             questions: safeQuestions,
         });
@@ -493,8 +497,8 @@ router.post('/:id/submit', authenticate, async (req, res) => {
 
         // Allow submission if status is live or recently completed (grace period handled by client/admin)
         // For strictness, only 'live'.
-        if (exam.status !== 'live') {
-            return res.status(400).json({ success: false, message: `Exam is not live (${exam.status})` });
+        if (exam.status !== 'live' && exam.status !== 'completed') {
+            return res.status(400).json({ success: false, message: `Exam is not live or completed (${exam.status})` });
         }
 
         // Check if already submitted
